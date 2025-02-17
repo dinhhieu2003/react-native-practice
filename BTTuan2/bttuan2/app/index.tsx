@@ -3,6 +3,7 @@ import { Text, View } from "react-native";
 import * as SecureStore from 'expo-secure-store';
 import { Redirect } from "expo-router";
 import Onboarding from "@/components/onboarding";
+import Login from "./(auth)/login";
 
 export default function Welcome() {
   const [isFirstLoad, setIsFirstLoad] = useState(true);
@@ -13,6 +14,7 @@ export default function Welcome() {
   useEffect(() => {
     const checkFirstLoad = async() => {
       const firstLoad = await SecureStore.getItem("firstLoad");
+      console.log("FirstLoad: " + firstLoad);
       if(firstLoad === "false") {
         setIsFirstLoad(false);
       }
@@ -26,7 +28,9 @@ export default function Welcome() {
   }
 
   return (
-    // onboarding screen
-    <Onboarding/>
+    // onboarding screen if first load
+    <>
+      {isFirstLoad ? <Onboarding /> : <Login/>}
+    </>
   );
 }

@@ -1,6 +1,7 @@
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { View, Text, Button } from "react-native";
+import * as SecureStore from 'expo-secure-store';
 
 export default function Onboarding() {
     const [step, setStep] = useState(0);
@@ -10,6 +11,11 @@ export default function Onboarding() {
         <View key="2"><Text>Discover Amazing Features</Text></View>,
         <View key="3"><Text>Let’s Get Started!</Text></View>,
     ];
+
+    useEffect(() => {
+            SecureStore.setItem("firstLoad", "false");
+            // SecureStore.deleteItemAsync("firstLoad");
+        }, [])
 
     return (
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
