@@ -1,5 +1,5 @@
-import { useEffect } from "react";
-import { View, StyleSheet, ScrollView, Text } from "react-native";
+import { useEffect, useState } from "react";
+import { View, StyleSheet, ScrollView, Text, TouchableOpacity } from "react-native";
 import * as ScreenOrientation from "expo-screen-orientation";
 import Element from "@/components/Element";
 import * as api from "../../api/api";
@@ -12,6 +12,10 @@ const spacing = 3;   // Khoảng cách giữa các ô
 const elements: ElementType[] = api.getElements();
 
 export default function Home() {
+  const [selectedGroup, setSelectedGroup] = useState<number | null>(null);
+  const toggleGroup = (group: number) => {
+    setSelectedGroup(selectedGroup === group ? null : group);
+  };
   useEffect(() => {
     // Xoay ngang màn hình khi vào trang
     const changeOrientation = async () => {
@@ -28,18 +32,42 @@ export default function Home() {
 
   return (
     <View style={styles.screen}>
-      <ScrollView horizontal style={{marginTop: 50, marginBottom: 50}}>
+      {/* Filter button */}
+      <View style={styles.groupFilter}>
+        {[...Array(18)].map((_, index) => {
+          const group = index + 1;
+          const isSelected = selectedGroup === group;
+          return (
+            <TouchableOpacity
+              key={group}
+              style={[
+                styles.groupButton,
+                { backgroundColor: isSelected ? getElementColor(`Group ${group}`) : "#ccc" }
+              ]}
+              onPress={() => toggleGroup(group)}
+            >
+              <Text style={styles.groupText}>{group}</Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+      {/* Periodic table */}
+      <ScrollView horizontal style={{marginTop: 20, marginBottom: 50}}>
         <ScrollView contentContainerStyle={styles.scrollContainer}>
           <View style={styles.table}>
-            {elements.map((el) => (
+            {elements.map((el) => {
+              let isDimmed = selectedGroup !== null && el.group !== selectedGroup;
+              if((el.type === "Actinide" || el.type === "Lanthanide") && selectedGroup !== null)
+                isDimmed = true;
+            return ( 
               <Element 
                 key={el.atomic_number}
                 symbol={el.symbol} 
                 row={el.period} 
                 col={el.group} 
-                color={getElementColor(el.type)}
+                color={isDimmed ? "#ccc" : getElementColor(el.type)}
                 atomic_number={el.atomic_number}/>
-            ))}
+            )})}
           </View>
         </ScrollView>
       </ScrollView>
@@ -61,4 +89,8 @@ const styles = StyleSheet.create({
     height: 10 * (cellSize + spacing), // (10 hàng: 7 hàng thường và 2 hàng Ac, Lan)
     position: "relative",
   },
+
+  groupFilter: { flexDirection: "row", flexWrap: "wrap", justifyContent: "center", marginBottom: 3 },
+  groupButton: { width: 13, height: 13, justifyContent: "center", alignItems: "center", margin: 5 },
+  groupText: { fontSize: 6, fontWeight: "bold", color: "black" },
 });

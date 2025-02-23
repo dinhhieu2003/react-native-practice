@@ -37,7 +37,6 @@ const styles = StyleSheet.create({
     height: cellSize,
     justifyContent: "center",
     alignItems: "center",
-    borderRadius: 5,
   },
   symbol: {
     height: "60%",
