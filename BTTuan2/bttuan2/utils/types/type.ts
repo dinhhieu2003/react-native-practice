@@ -59,3 +59,13 @@ export interface UpdateUserRequest {
   name: string,
   avatar: string
 }
+
+export interface ElementType {
+  symbol: string,
+  name: string,
+  atomic_number: number,
+  group: number,
+  period: number,
+  block: string,
+  type: string,
+}

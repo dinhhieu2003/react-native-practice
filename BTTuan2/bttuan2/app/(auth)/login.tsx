@@ -20,11 +20,11 @@ export default function Login() {
             SecureStore.setItem("id", loginResponse.id.toString());
             SecureStore.setItem("email", loginResponse.email);
             SecureStore.setItem("name", loginResponse.name);
-            SecureStore.setItem("avatar", loginResponse.avatar);
+            SecureStore.setItem("avatar", loginResponse.avatar || "");
             SecureStore.setItem("role", loginResponse.role);
         }
+        
         if(response !== null) {
-            console.log("Hello");
             router.replace("/(home)");
         }
     }

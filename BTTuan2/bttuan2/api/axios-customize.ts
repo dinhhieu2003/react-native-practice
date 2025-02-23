@@ -31,9 +31,8 @@ instance.interceptors.response.use(
     (res) => res,
     async (error) => {
         if (error.status === 401) {
-            const router = useRouter();
-            SecureStore.deleteItemAsync("access_token");
-            router.replace("/(auth)/login");
+            console.log("401");
+            await SecureStore.deleteItemAsync("access_token");
             return;
         }
         throw error;
