@@ -36,6 +36,38 @@ export const verifyOTP = async (email: string, otp: string):
     }  
 }
 
+export const verifyOTPRegister = async (email: string, otp: string):
+                        Promise<ApiResponse<VerifyOTPResponse> | null> => {
+    try {
+        const verifyOTPRequest: VerifyOTPRequest = {
+            email: email,
+            otp: otp
+        }
+        const response = await axios.post(`${api_url}/auth/verify-register`, verifyOTPRequest);
+        console.log(response.data);
+        return response.data;
+    } catch(error: any) {
+        alert(error.response.data.message);
+        return null;
+    }  
+}
+
+export const verifyOTPChangeEmail = async (email: string, otp: string):
+                        Promise<ApiResponse<VerifyOTPResponse> | null> => {
+    try {
+        const verifyOTPRequest: VerifyOTPRequest = {
+            email: email,
+            otp: otp
+        }
+        const response = await axios.post(`${api_url}/auth/verify-change-email`, verifyOTPRequest);
+        console.log(response.data);
+        return response.data;
+    } catch(error: any) {
+        alert(error.response.data.message);
+        return null;
+    }  
+}
+
 export const resendOTP = async (email: string):
                         Promise<ApiResponse<any> | null> => {
     try {
@@ -78,7 +110,6 @@ export const login = async (email: string, password: string):
         }
         console.log(`${api_url}/auth/login`);
         const response = await axios.post(`${api_url}/auth/login`, loginRequest);
-        console.log(response.data);
         return response.data;
     } catch (error: any) {
         alert(error.response.data.message);

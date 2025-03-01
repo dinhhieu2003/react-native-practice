@@ -23,7 +23,7 @@ export default function Register() {
         console.log(registerResponse.data);
         router.replace(
             {
-                pathname: "/(auth)/verify",
+                pathname: "/(auth)/verify-register",
                 params: { email },
             }
         );

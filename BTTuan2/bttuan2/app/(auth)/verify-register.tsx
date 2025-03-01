@@ -6,7 +6,7 @@ import OTPInput from "@/components/otpInput";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import * as api from "../../api/api";
 
-export default function Verify() {
+export default function VerifyRegister() {
     const [otpValue, setOtpValue] = useState("");
     const { email } = useLocalSearchParams();
     const router = useRouter();
@@ -16,7 +16,7 @@ export default function Verify() {
         console.log(otp);
     }
     const handleConfirmOTP = async() => {
-        const response: any = await api.verifyOTP(emailString, otpValue);
+        const response: any = await api.verifyOTPRegister(emailString, otpValue);
         alert("Xác nhận thành công");
         router.replace("/(auth)/login");
     }

@@ -7,10 +7,8 @@ import { Link, useRouter } from "expo-router";
 import OTPInput from "@/components/otpInput";
 import * as api from "../../api/api";
 
-export default function Forgot() {
+export default function EditEmail() {
     const [email, setEmail] = useState("");
-    const [password, setPassword] = useState("");
-    const [confirmPassword, setConfirmPassword] = useState("");
     const [otpValue, setOtpValue] = useState("");
     
     const router = useRouter();
@@ -20,40 +18,34 @@ export default function Forgot() {
         console.log(otp);
     }
 
-    const handleSendOTP = () => {
-        const response = api.resendOTP(email);
+    const handleSendOTP = async () => {
+        const response = await api.resendOTP(email);
+        if(response !== null)
+            alert("OTP vừa được gửi tới email: " + email);
         console.log(response);
     }
 
     const handleConfirmOTP = async() => {
-        const response: any = await api.verifyOTP(email, otpValue);
-        alert("Xác nhận thành công");
-        router.replace(
-            {
-                pathname: "/(auth)/reset-password",
-                params: { email, otpValue },
-            }
-        );
+        const response: any = await api.verifyOTPChangeEmail(email, otpValue);
+        console.log(response);
+        if(response !== null) {
+            alert("Xác nhận thành công");
+            router.back();
+        }
+  
     }
     
     return (
         // form register
         <ScrollView style={{flex: 1, backgroundColor: "#ffffff"}}>
-            <View style={imgStyles.styles.container}>
-                <Image
-                    style={imgStyles.styles.squareImg}
-                    source={require("../../assets/images/forgot_password.png")}
-                />
-            </View>
 
             <TextInput 
                 style={formStyles.styles.input} 
-                placeholder="Email" 
+                placeholder="Nhập email mới" 
                 keyboardType="email-address" 
                 value={email} 
                 onChangeText={setEmail} 
             />
-
 
             <TouchableOpacity style={formStyles.styles.button}
                                 onPress={handleSendOTP}>
@@ -62,19 +54,13 @@ export default function Forgot() {
 
             <OTPInput length={6} onOtpComplete={handleOTPComplete}/>
 
+            <TouchableOpacity style={[formStyles.styles.button, {marginTop: 25}]} onPress={handleSendOTP}>
+                <Text style={formStyles.styles.buttonText}>Gửi lại OTP</Text>
+            </TouchableOpacity>
+
             <TouchableOpacity style={[formStyles.styles.button, {marginTop: 25}]} onPress={handleConfirmOTP}>
                 <Text style={formStyles.styles.buttonText}>Xác nhận</Text>
             </TouchableOpacity>
-            
-            <View style={{flexDirection: "row", margin: "auto", marginTop: 15, marginBottom: 15}}>
-                <Text>Chưa có tài khoản? </Text>
-                <Link 
-                    href={"/(auth)/register"}
-                    replace
-                    style={{color: "blue"}}>
-                    Đăng ký ngay
-                </Link>
-            </View>
             
         </ScrollView>
     );

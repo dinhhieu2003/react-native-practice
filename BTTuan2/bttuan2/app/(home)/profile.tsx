@@ -5,13 +5,18 @@ import * as ImagePicker from 'expo-image-picker';
 import * as SecureStore from 'expo-secure-store';
 import * as api from '../../api/api';
 import * as formStyles from "../../styles/form";
+import { useRouter } from 'expo-router';
 
 export default function Profile() {
     const username = SecureStore.getItem("name");
     const avatarStored = SecureStore.getItem("avatar");
+    const emailStored = SecureStore.getItem("email");
     const [name, setName] = useState("User name");
+    const [email, setEmail] = useState("Email");
     const [isEditing, setIsEditing] = useState(false);
     const [avatar, setAvatar] = useState('https://upload.wikimedia.org/wikipedia/commons/thumb/9/9e/Male_Avatar.jpg/1200px-Male_Avatar.jpg');
+
+    const router = useRouter();
 
     useEffect(() => {
         if(username !== null) {
@@ -19,6 +24,9 @@ export default function Profile() {
         }
         if(avatarStored !== null) {
             setAvatar(avatarStored);
+        }
+        if(emailStored !== null) {
+            setEmail(emailStored);
         }
     }, []);
 
@@ -64,6 +72,10 @@ export default function Profile() {
         console.log(response);
     }
 
+    const handleEditEmail = async () => {
+        router.push("/(home)/edit-email");
+    }
+
     return (
         <View style={styles.container}>
             <TouchableOpacity onPress={pickImage} style={styles.avatarContainer}>
@@ -86,6 +98,14 @@ export default function Profile() {
                     <AntDesign name="edit" size={20} color="black" style={styles.icon} />
                 </TouchableOpacity>
             </View>
+
+            <View style={styles.nameContainer}>
+                <Text style={styles.name}>{email}</Text>
+                <TouchableOpacity onPress={handleEditEmail}>
+                    <AntDesign name="edit" size={20} color="black" style={styles.icon} />
+                </TouchableOpacity>
+            </View>
+
             <TouchableOpacity onPress={handleConfirmEdit}
                                 style={formStyles.styles.button}>
                 <Text style={formStyles.styles.buttonText}>Xác nhận chỉnh sửa</Text>
