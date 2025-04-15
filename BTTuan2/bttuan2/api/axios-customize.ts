@@ -13,8 +13,8 @@ const instance = axiosClient.create({
 });
 
 instance.interceptors.request.use(function (config) {
-    if (SecureStore.getItem('access_token')) {
-        config.headers.Authorization = 'Bearer ' + SecureStore.getItem('access_token');
+    if (SecureStore.getItem('accessToken')) {
+        config.headers.Authorization = 'Bearer ' + SecureStore.getItem('accessToken');
     }
     if (!config.headers.Accept && config.headers["Content-Type"]) {
         config.headers.Accept = "application/json";
@@ -32,7 +32,7 @@ instance.interceptors.response.use(
     async (error) => {
         if (error.status === 401) {
             console.log("401");
-            await SecureStore.deleteItemAsync("access_token");
+            await SecureStore.deleteItemAsync("accessToken");
             return;
         }
         throw error;

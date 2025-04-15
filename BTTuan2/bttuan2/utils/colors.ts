@@ -19,7 +19,8 @@ const elementColors: Record<string, string> = {
     "Group 17": "#eab37f", 
     "Group 18": "#eada24",  
     "Lanthanide": "#00b894", 
-    "Actinide": "#8D626A"
+    "Actinide": "#8D626A",
+    "unknown": "#CCCCCC"
 };
 
 

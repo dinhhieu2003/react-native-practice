@@ -33,10 +33,26 @@
           "backgroundColor": "#ffffff"
         }
       ],
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/Header-Logo.png",
+          "color": "#ffffff"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "notification": {
+      "icon": "./assets/images/Header-Logo.png",
+      "color": "#FFFFFF",
+      "androidMode": "default",
+      "android": {
+        "channelId": "default",
+        "notificationCount": true
+      }
     }
   }
 }

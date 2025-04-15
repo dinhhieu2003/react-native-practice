@@ -7,6 +7,7 @@ import { Link, useRouter } from "expo-router";
 import * as api from "../../api/api";
 import { ApiResponse, LoginResponse } from "@/utils/types/type";
 import * as SecureStore from 'expo-secure-store';
+import WebSocketService from "@/services/WebSocketService";
 
 export default function Login() {
     const [email, setEmail] = useState("");
@@ -15,17 +16,29 @@ export default function Login() {
     const handleLogin = async() => {
         const response: ApiResponse<LoginResponse> | null = await api.login(email, password);
         const loginResponse: LoginResponse | undefined = response?.data;
+        
         if(response !== null && loginResponse !== undefined) {
-            SecureStore.setItem("access_token", loginResponse.accessToken);
-            SecureStore.setItem("id", loginResponse.id.toString());
-            SecureStore.setItem("email", loginResponse.email);
-            SecureStore.setItem("name", loginResponse.name);
-            SecureStore.setItem("avatar", loginResponse.avatar || "");
-            SecureStore.setItem("role", loginResponse.role);
+            console.log("Login successful, storing tokens...");
+            await SecureStore.setItemAsync("accessToken", loginResponse.accessToken);
+            await SecureStore.setItemAsync("id", loginResponse.id.toString());
+            await SecureStore.setItemAsync("email", loginResponse.email);
+            await SecureStore.setItemAsync("name", loginResponse.name);
+            await SecureStore.setItemAsync("avatar", loginResponse.avatar || "");
+            await SecureStore.setItemAsync("role", loginResponse.role);
+            console.log("Tokens stored.");
         }
         
         if(response !== null) {
-            router.replace("/(home)");
+            try {
+                console.log("Attempting to connect WebSocket (response was not null)...");
+                await WebSocketService.connect();
+                console.log("WebSocket connect initiated.");
+
+                router.replace("/(home)");
+            } catch (error) {
+                console.error("Error connecting WebSocket or navigating:", error);
+                alert("An error occurred after login attempt.");
+            }
         }
     }
     

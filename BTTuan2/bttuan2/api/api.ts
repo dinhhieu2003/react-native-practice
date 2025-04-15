@@ -1,5 +1,10 @@
-import { ElementType, ApiResponse, LoginRequest, LoginResponse, RegisterRequest, RegisterResponse, ResetPasswordRequest, SendOTPRequest, UpdateUserRequest, VerifyOTPRequest, VerifyOTPResponse } from "@/utils/types/type";
+import { ElementType, ApiResponse, LoginRequest, LoginResponse, RegisterRequest, RegisterResponse, ResetPasswordRequest, SendOTPRequest, UpdateUserRequest, VerifyOTPRequest, VerifyOTPResponse, Podcast, PodcastsApiResponseData, CommentsApiResponseData, Comment, 
+    ElementComment, ElementCommentsApiResponseData, PodcastDetail,
+    NotificationApiResponseData, NotificationItem,
+    UserProfile, PaginatedResponse, FavoriteElement, FavoritePodcast, ViewedElement, ViewedPodcast
+} from "@/utils/types/type";
 import axios from "./axios-customize";
+import * as SecureStore from 'expo-secure-store';
 
 const base_url = process.env.EXPO_PUBLIC_BASE_URL;
 const api_url = `${base_url}/api/v1`;
@@ -266,3 +271,450 @@ export const getElements = (): ElementType[] => {
     ];
     return elements;
 }
+
+// ============ Podcasts API =====================
+
+export const fetchPodcastsByElement = async (elementName: string): Promise<Podcast[]> => {
+  // Use axios instance if available and configured, otherwise fallback to fetch
+  // Assuming axios is configured for base URL and potential interceptors
+  // const url = `/podcasts?term=${encodeURIComponent(elementName)}`;
+  // For consistency with the request, using fetch directly here as specified in the prompt example
+  // Note: The base URL from env should likely point to the root API, e.g., http://yourdomain.com
+  // The endpoint path is then appended.
+  const url = `${base_url}/api/v1/podcasts?term=${elementName}`;
+
+  try {
+    // Using fetch as per the initial code snippet provided
+    const response = await axios.get(url);
+    // Assuming the standard ApiResponse structure defined in types
+    const data: ApiResponse<PodcastsApiResponseData> = await response.data;
+
+    if (data.error) {
+      console.error('API returned an error:', data.error);
+      throw new Error(data.message || `API error fetching podcasts for ${elementName}`);
+    }
+
+    // Return only the results array
+    return data.data.result || [];
+  } catch (error) {
+    console.error(`Error fetching podcasts for ${elementName}:`, error);
+    // Optionally, show a user-friendly message here via alert or a state update
+    alert(`Failed to load podcasts: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    return []; // Return empty array on error to allow UI to display 'no results' or error state
+  }
+};
+
+// ============ Favorite Podcasts API =====================
+
+/**
+ * Fetches the favorite status of a specific podcast.
+ */
+export const getFavoriteStatus = async (podcastId: string):
+  Promise<ApiResponse<{ podcastId: number; active: boolean }>> => {
+  const url = `${api_url}/favorite-podcasts/podcasts/${podcastId}`;
+  console.log(`GET Request URL: ${url}`);
+  try {
+    const response = await axios.get(url);
+    return response.data; // Axios automatically handles JSON parsing and throws for bad statuses
+  } catch (error: any) {
+    console.error(`Error fetching favorite status for podcast ${podcastId}:`, error.response?.data || error.message);
+    // Rethrow or return a structured error object based on preferred handling
+    // Example: Re-throwing to let the calling component handle it
+    throw new Error(error.response?.data?.message || `Failed to fetch favorite status for podcast ${podcastId}`);
+  }
+};
+
+/**
+ * Toggles the favorite status of a specific podcast.
+ */
+export const toggleFavoriteStatus = async (podcastId: string):
+  Promise<ApiResponse<{ podcastId: number; active: boolean }>> => {
+  const url = `${api_url}/favorite-podcasts/podcasts/${podcastId}`;
+  console.log(`POST Request URL: ${url}`);
+  try {
+    const response = await axios.post(url);
+    return response.data;
+  } catch (error: any) {
+    console.error(`Error toggling favorite status for podcast ${podcastId}:`, error.response?.data || error.message);
+    // Example: Re-throwing
+    throw new Error(error.response?.data?.message || `Failed to toggle favorite status for podcast ${podcastId}`);
+  }
+};
+
+// ============ Podcast Comments API =====================
+
+
+
+/**
+ * Fetches comments for a specific podcast with pagination.
+ */
+export const getPodcastComments = async (podcastId: number, page: number = 1, pageSize: number = 10):
+  Promise<ApiResponse<CommentsApiResponseData>> => {
+    console.log(`podcastId: ${podcastId}`);
+  const url = `${api_url}/comments/podcasts?page=${page}&pageSize=${pageSize}&podcastId=${podcastId}`;
+  console.log(`GET Request URL (Comments): ${url}`);
+  try {
+    const response = await axios.get(url);
+    // Ensure the response structure matches ApiResponse<CommentsApiResponseData>
+    // If the API directly returns the structure { result: [], meta: {} }, wrap it if needed
+    // Assuming response.data directly matches the expected structure
+    return response.data;
+  } catch (error: any) {
+    console.error(`Error fetching comments for podcast ${podcastId}:`, error.response?.data || error.message);
+    throw new Error(error.response?.data?.message || `Failed to fetch comments for podcast ${podcastId}`);
+  }
+};
+
+/**
+ * Adds a new comment to a podcast.
+ */
+export const addPodcastComment = async (content: string, podcastId: number):
+  Promise<ApiResponse<Comment>> => { // Assuming the API returns the newly created comment
+  const url = `${api_url}/comments/podcasts`;
+  console.log(`POST Request URL (Add Comment): ${url}`);
+  const body = { content, podcastId };
+  try {
+    const response = await axios.post(url, body);
+    return response.data;
+  } catch (error: any) {
+    console.error(`Error adding comment to podcast ${podcastId}:`, error.response?.data || error.message);
+    throw new Error(error.response?.data?.message || `Failed to add comment.`);
+  }
+};
+
+/**
+ * Edits an existing comment.
+ */
+export const editPodcastComment = async (commentId: number, content: string):
+  Promise<ApiResponse<Comment>> => { // Assuming the API returns the updated comment
+  const url = `${api_url}/comments/podcasts/${commentId}`;
+  console.log(`PUT Request URL (Edit Comment): ${url}`);
+  const body = { content };
+  try {
+    const response = await axios.put(url, body);
+    return response.data;
+  } catch (error: any) {
+    console.error(`Error editing comment ${commentId}:`, error.response?.data || error.message);
+    // Specific check for 403 Forbidden
+    if (error.response?.status === 403) {
+        throw new Error(error.response?.data?.message || 'You do not have permission to edit this comment.');
+    }
+    throw new Error(error.response?.data?.message || `Failed to edit comment.`);
+  }
+};
+
+/**
+ * Likes a podcast comment.
+ */
+export const likePodcastComment = async (commentId: number):
+  Promise<ApiResponse<{ message: string }>> => { // Assuming a simple success message response
+  const url = `${api_url}/comments/podcasts/${commentId}/like`;
+  console.log(`PATCH Request URL (Like Comment): ${url}`);
+  try {
+    // Using PATCH as specified, assuming no request body is needed
+    const response = await axios.patch(url);
+    return response.data;
+  } catch (error: any) {
+    console.error(`Error liking comment ${commentId}:`, error.response?.data || error.message);
+    throw new Error(error.response?.data?.message || `Failed to like comment.`);
+  }
+};
+
+// ============ Favorite Elements API =====================
+
+/**
+ * Fetches the favorite status of a specific element.
+ */
+export const getElementFavoriteStatus = async (elementId: number):
+  Promise<ApiResponse<{ elementId: number; active: boolean }>> => {
+  const url = `${api_url}/favorite-elements/elements/${elementId}`;
+  console.log(`GET Request URL: ${url}`);
+  try {
+    const response = await axios.get(url);
+    return response.data;
+  } catch (error: any) {
+    console.error(`Error fetching favorite status for element ${elementId}:`, error.response?.data || error.message);
+    throw new Error(error.response?.data?.message || `Failed to fetch favorite status for element ${elementId}`);
+  }
+};
+
+/**
+ * Toggles the favorite status of a specific element.
+ */
+export const toggleElementFavorite = async (elementId: number):
+  Promise<ApiResponse<{ elementId: number; active: boolean }>> => {
+  const url = `${api_url}/favorite-elements/elements/${elementId}`;
+  console.log(`POST Request URL: ${url}`);
+  try {
+    const response = await axios.post(url);
+    return response.data;
+  } catch (error: any) {
+    console.error(`Error toggling favorite status for element ${elementId}:`, error.response?.data || error.message);
+    throw new Error(error.response?.data?.message || `Failed to toggle favorite status for element ${elementId}`);
+  }
+};
+
+
+// ============ Element Comments API =====================
+
+/**
+ * Fetches comments for a specific element with pagination.
+ */
+export const getElementComments = async (elementId: number, page: number = 1, pageSize: number = 10):
+  Promise<ApiResponse<ElementCommentsApiResponseData>> => {
+  const url = `${api_url}/comments/elements?current=${page}&pageSize=${pageSize}&elementId=${elementId}`;
+  console.log(`GET Request URL (Element Comments): ${url}`);
+  try {
+    const response = await axios.get(url);
+    return response.data;
+  } catch (error: any) {
+    console.error(`Error fetching comments for element ${elementId}:`, error.response?.data || error.message);
+    throw new Error(error.response?.data?.message || `Failed to fetch comments for element ${elementId}`);
+  }
+};
+
+/**
+ * Adds a new comment to an element.
+ */
+export const addElementComment = async (content: string, elementId: number):
+  Promise<ApiResponse<ElementComment>> => {
+  const url = `${api_url}/comments/elements`;
+  console.log(`POST Request URL (Add Element Comment): ${url}`);
+  const body = { content, elementId };
+  try {
+    const response = await axios.post(url, body);
+    return response.data;
+  } catch (error: any) {
+    console.error(`Error adding comment to element ${elementId}:`, error.response?.data || error.message);
+    throw new Error(error.response?.data?.message || `Failed to add comment.`);
+  }
+};
+
+/**
+ * Edits an existing element comment.
+ */
+export const editElementComment = async (commentId: number, content: string):
+  Promise<ApiResponse<ElementComment>> => {
+  const url = `${api_url}/comments/elements/${commentId}`;
+  console.log(`PUT Request URL (Edit Element Comment): ${url}`);
+  const body = { content };
+  try {
+    const response = await axios.put(url, body);
+    return response.data;
+  } catch (error: any) {
+    console.error(`Error editing element comment ${commentId}:`, error.response?.data || error.message);
+    if (error.response?.status === 403) {
+        throw new Error(error.response?.data?.message || 'You do not have permission to edit this comment.');
+    }
+    throw new Error(error.response?.data?.message || `Failed to edit comment.`);
+  }
+};
+
+/**
+ * Likes an element comment.
+ */
+export const likeElementComment = async (commentId: number):
+  Promise<ApiResponse<{ message: string }>> => {
+  const url = `${api_url}/comments/elements/${commentId}/like`;
+  console.log(`PATCH Request URL (Like Element Comment): ${url}`);
+  try {
+    const response = await axios.patch(url);
+    return response.data;
+  } catch (error: any) {
+    console.error(`Error liking element comment ${commentId}:`, error.response?.data || error.message);
+    throw new Error(error.response?.data?.message || `Failed to like comment.`);
+  }
+};
+
+// ============ Viewed Elements API =====================
+
+/**
+ * Records that an element has been viewed by the user.
+ */
+export const recordElementView = async (elementId: number):
+  Promise<ApiResponse<any> | null> => {
+  // No request body is typically needed for this type of action, just the ID in the URL.
+  const url = `${api_url}/viewed-elements/element/${elementId}`;
+  console.log(`POST Request URL (Record Element View): ${url}`);
+
+  try {
+    // Use POST method as specified
+    const response = await axios.post(url);
+    // Return the response data, which might contain a success message or be empty
+    return response.data;
+  } catch (error: any) {
+    // Log the error for debugging, but don't block user flow or show alert
+    console.error(`Error recording view for element ${elementId}:`, error.response?.data || error.message);
+    // Return null or a specific error structure if the caller needs to know about the failure
+    // For a background task like this, returning null is often sufficient.
+    return null;
+  }
+};
+
+// ============ Viewed Podcasts API =====================
+
+/**
+ * Records that a podcast has been viewed by the user.
+ */
+export const recordPodcastView = async (podcastId: number | string):
+  Promise<ApiResponse<any> | null> => {
+  // No request body is typically needed for this type of action, just the ID in the URL.
+  const url = `${api_url}/viewed-podcasts/podcasts/${podcastId}`;
+  console.log(`POST Request URL (Record Podcast View): ${url}`);
+
+  try {
+    // Use POST method as specified
+    const response = await axios.post(url);
+    // Return the response data, which might contain a success message or be empty
+    return response.data;
+  } catch (error: any) {
+    // Log the error for debugging, but don't block user flow or show alert
+    console.error(`Error recording view for podcast ${podcastId}:`, error.response?.data || error.message);
+    // Return null or a specific error structure if the caller needs to know about the failure
+    // For a background task like this, returning null is often sufficient.
+    return null;
+  }
+};
+
+export const getUserProfile = async (): Promise<ApiResponse<UserProfile> | null> => {
+    try {
+        const response = await axios.get<ApiResponse<UserProfile>>(`${api_url}/users/profile`);
+        return response.data;
+    } catch (error: any) {
+        console.error("Error fetching user profile:", error.response?.data || error.message);
+        alert(error.response?.data?.message || "Failed to fetch profile");
+        return null;
+    }
+}
+
+export const getPodcastById = async (podcastId: number): Promise<ApiResponse<PodcastDetail> | null> => {
+    try {
+        const response = await axios.get<ApiResponse<PodcastDetail>>(`${api_url}/podcasts/${podcastId}`);
+        return response.data;
+    } catch (error: any) {
+        console.error(`Error fetching podcast ${podcastId}:`, error.response?.data || error.message);
+        // Avoid redundant alert if console log is sufficient
+        // alert(error.response?.data?.message || `Failed to fetch podcast details for ID ${podcastId}`);
+        return null;
+    }
+}
+
+export const getFavoriteElements = async (current: number = 1, pageSize: number = 10): 
+    Promise<ApiResponse<PaginatedResponse<FavoriteElement>> | null> => {
+    try {
+        const response = await axios.get<ApiResponse<PaginatedResponse<FavoriteElement>>>(`${api_url}/favorite-elements`, {
+            params: { current, pageSize }
+        });
+        return response.data;
+    } catch (error: any) {
+        console.error("Error fetching favorite elements:", error.response?.data || error.message);
+        alert(error.response?.data?.message || "Failed to fetch favorite elements");
+        return null;
+    }
+}
+
+export const getFavoritePodcasts = async (current: number = 1, pageSize: number = 10):
+    Promise<ApiResponse<PaginatedResponse<FavoritePodcast>> | null> => {
+    try {
+        const response = await axios.get<ApiResponse<PaginatedResponse<FavoritePodcast>>>(`${api_url}/favorite-podcasts`, {
+            params: { current, pageSize }
+        });
+        return response.data;
+    } catch (error: any) {
+        console.error("Error fetching favorite podcasts:", error.response?.data || error.message);
+        alert(error.response?.data?.message || "Failed to fetch favorite podcasts");
+        return null;
+    }
+}
+
+export const getViewedElements = async (current: number = 1, pageSize: number = 10):
+    Promise<ApiResponse<PaginatedResponse<ViewedElement>> | null> => {
+    try {
+        const response = await axios.get<ApiResponse<PaginatedResponse<ViewedElement>>>(`${api_url}/viewed-elements`, {
+            params: { current, pageSize }
+        });
+        return response.data;
+    } catch (error: any) {
+        console.error("Error fetching viewed elements:", error.response?.data || error.message);
+        alert(error.response?.data?.message || "Failed to fetch viewed elements");
+        return null;
+    }
+}
+
+export const getViewedPodcasts = async (current: number = 1, pageSize: number = 10):
+    Promise<ApiResponse<PaginatedResponse<ViewedPodcast>> | null> => {
+    try {
+        const response = await axios.get<ApiResponse<PaginatedResponse<ViewedPodcast>>>(`${api_url}/viewed-podcasts`, {
+            params: { current, pageSize }
+        });
+        return response.data;
+    } catch (error: any) {
+        console.error("Error fetching viewed podcasts:", error.response?.data || error.message);
+        alert(error.response?.data?.message || "Failed to fetch viewed podcasts");
+        return null;
+    }
+}
+
+// ============ Notifications ===================
+
+// Fetch notifications with pagination
+export const WorkspaceNotifications = async (
+    current: number = 1, 
+    pageSize: number = 20
+): Promise<ApiResponse<NotificationApiResponseData> | null> => {
+    const url = `${api_url}/notifications?current=${current}&pageSize=${pageSize}`;
+    console.log('Fetching notifications:', url);
+    try {
+        const response = await axios.get<ApiResponse<NotificationApiResponseData>>(url);
+        console.log('Notifications fetched:', JSON.stringify(response.data.data.result, null, 2));
+        return response.data;
+    } catch (error: any) {
+        console.error('Error fetching notifications:', url, error.response?.data || error.message);
+        // Re-throw or handle as per existing error handling strategy
+        // For now, returning null similar to other functions
+        alert(error.response?.data?.message || 'Failed to fetch notifications');
+        return null;
+    }
+};
+
+// Mark a specific notification as read
+export const markNotificationAsRead = async (notificationId: number): Promise<ApiResponse<any> | null> => {
+    const url = `${api_url}/notifications/${notificationId}/read`;
+    console.log('Marking notification as read:', url);
+    try {
+        const response = await axios.patch<ApiResponse<any>>(url);
+        return response.data;
+    } catch (error: any) {
+        console.error('Error marking notification as read:', url, error.response?.data || error.message);
+        alert(error.response?.data?.message || 'Failed to mark notification as read');
+        return null;
+    }
+};
+
+// Mark all notifications as read
+export const markAllNotificationsAsRead = async (): Promise<ApiResponse<any> | null> => {
+    const url = `${api_url}/notifications/read-all`;
+    console.log('Marking all notifications as read:', url);
+    try {
+        const response = await axios.patch<ApiResponse<any>>(url);
+        return response.data;
+    } catch (error: any) {
+        console.error('Error marking all notifications as read:', url, error.response?.data || error.message);
+        alert(error.response?.data?.message || 'Failed to mark all notifications as read');
+        return null;
+    }
+};
+
+// Delete a specific notification (Optional)
+export const deleteNotification = async (notificationId: number): Promise<ApiResponse<any> | null> => {
+    const url = `${api_url}/notifications/${notificationId}`;
+    console.log('Deleting notification:', url);
+    try {
+        const response = await axios.delete<ApiResponse<any>>(url);
+        return response.data;
+    } catch (error: any) {
+        console.error('Error deleting notification:', url, error.response?.data || error.message);
+        alert(error.response?.data?.message || 'Failed to delete notification');
+        return null;
+    }
+};

@@ -84,8 +84,6 @@ export default function Register() {
                     Đăng nhập ngay
                 </Link>
             </View>
-
-            <Link href={"/(auth)/verify"} replace>OTP</Link>
             
         </ScrollView>
     );
